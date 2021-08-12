@@ -1,0 +1,28 @@
+---
+- name: Setup kubectl on control-planes
+  hosts: control_planes
+  tasks:
+    - name: import kubectl binary
+      become: yes
+      copy:
+        src: ../bin/kubectl
+        dest: /usr/local/bin/kubectl
+        owner: root
+        group: root
+        mode: '0555'
+    - name: create .kube folder
+      become: yes
+      file:
+        path: /home/outscale/.kube
+        state: directory
+        owner: outscale
+        group: outscale
+        mode: '0740'
+    - name: import admin.kubeconfig
+      become: yes
+      copy:
+        src: "localhost_admin.kubeconfig"
+        dest: /home/outscale/.kube/config
+        owner: outscale
+        group: outscale
+        mode: '0640'

@@ -1,0 +1,79 @@
+---
+- name: Setup etcd service
+  hosts: control_planes
+  tasks:
+    - name: import etcd binary
+      become: yes
+      register: somefiles
+      copy:
+        src: ../bin/etcd
+        dest: /usr/local/bin/etcd
+        owner: root
+        group: root
+        mode: '0555'
+    - name: import etcd binary
+      become: yes
+      copy:
+        src: ../bin/etcdctl
+        dest: /usr/local/bin/etcdctl
+        owner: root
+        group: root
+        mode: '0555'
+    - name: /etc/etcd folder
+      become: yes
+      register: somefiles
+      file:
+        path: /etc/etcd
+        state: directory
+    - name: /var/lib/etcd folder
+      become: yes
+      register: somefiles
+      file:
+        path: /var/lib/etcd
+        state: directory
+        mode: "700"
+    - name: import ca.pem
+      become: yes
+      register: somefiles
+      copy:
+        src: ../ca/ca.pem
+        dest: /etc/etcd/ca.pem
+        owner: root
+        group: root
+        mode: '0440'
+    - name: import kubernetes-key.pem
+      become: yes
+      register: somefiles
+      copy:
+        src: ../kubernetes/kubernetes-key.pem
+        dest: /etc/etcd/kubernetes-key.pem
+        owner: root
+        group: root
+        mode: '0440'
+    - name: import kubernetes.pem
+      become: yes
+      register: somefiles
+      copy:
+        src: ../kubernetes/kubernetes.pem
+        dest: /etc/etcd/kubernetes.pem
+        owner: root
+        group: root
+        mode: '0440'
+    - name: import etcd.service
+      become: yes
+      register: somefiles
+      copy:
+        src: "{{ inventory_hostname }}_etcd.service"
+        dest: /etc/systemd/system/etcd.service
+        owner: root
+        group: root
+        mode: '0444'
+    - name: start / restart etcd service
+      become: yes
+      when: somefiles.changed
+      systemd:
+        name: etcd
+        enabled: yes
+        daemon_reload: yes
+        masked: no
+        state: restarted

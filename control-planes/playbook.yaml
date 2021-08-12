@@ -1,0 +1,7 @@
+---
+- name: Setup control-planes
+  hosts: control_planes
+  tasks:
+    - name: Disable swap
+      command: swapoff -a
+      become: true

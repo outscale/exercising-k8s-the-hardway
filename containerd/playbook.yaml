@@ -1,0 +1,63 @@
+---
+- name: Setup Containerd service
+  hosts: workers
+  tasks:
+    - name: import containerd binaries
+      become: yes
+      register: somefiles
+      copy:
+        src: ../bin/containerd/
+        dest: /bin
+        owner: root
+        group: root
+        mode: '0555'
+    - name: Create containerd config folder
+      become: yes
+      register: somefiles
+      file:
+        path: /etc/containerd/
+        state: directory
+    - name: import containerd config
+      become: yes
+      register: somefiles
+      copy:
+        src: "config.toml"
+        dest: /etc/containerd/config.toml
+        owner: root
+        group: root
+        mode: '0444'
+    - name: Create systemd conf folder
+      become: yes
+      register: somefiles
+      file:
+        path: /etc/systemd/system
+        state: directory
+    - name: import containerd.service
+      become: yes
+      register: somefiles
+      copy:
+        src: "containerd.service"
+        dest: /etc/systemd/system/containerd.service
+        owner: root
+        group: root
+        mode: '0444'
+    - name: start / restart containerd service
+      become: yes
+      when: somefiles.changed
+      systemd:
+        name: containerd
+        enabled: yes
+        daemon_reload: yes
+        masked: no
+        state: restarted
+- name: Install opencontainers/runc
+  hosts: workers
+  tasks:
+    - name: import runc binary
+      become: yes
+      copy:
+        src: ../bin/runc
+        dest: /usr/local/bin/runc
+        owner: root
+        group: root
+        mode: '0555'

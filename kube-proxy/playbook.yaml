@@ -1,0 +1,61 @@
+---
+- name: Setup kube-proxy service
+  hosts: workers
+  tasks:
+    - name: Import kube-proxy binary
+      become: yes
+      register: somefiles
+      copy:
+        src: ../bin/kube-proxy
+        dest: /usr/local/bin/kube-proxy
+        owner: root
+        group: root
+        mode: '0555'
+    - name: Create kube-proxy config folder
+      become: yes
+      register: somefiles
+      file:
+        path: /var/lib/kube-proxy/
+        state: directory
+    - name: import kube-proxy.kubeconfig
+      become: yes
+      register: somefiles
+      copy:
+        src: "kube-proxy.kubeconfig"
+        dest:  /var/lib/kube-proxy/kubeconfig
+        owner: root
+        group: root
+        mode: '0440'
+    - name: import kube-proxy config
+      become: yes
+      register: somefiles
+      copy:
+        src: "kube-proxy-config.yaml"
+        dest:  /var/lib/kube-proxy/kube-proxy-config.yaml
+        owner: root
+        group: root
+        mode: '0440'
+    - name: Create systemd conf folder
+      become: yes
+      register: somefiles
+      file:
+        path: /etc/systemd/system
+        state: directory
+    - name: import kube-proxy.service
+      become: yes
+      register: somefiles
+      copy:
+        src: "kube-proxy.service"
+        dest: /etc/systemd/system/kube-proxy.service
+        owner: root
+        group: root
+        mode: '0444'
+    - name: start / restart kube-proxy.service
+      become: yes
+      when: somefiles.changed
+      systemd:
+        name: kube-proxy
+        enabled: yes
+        daemon_reload: yes
+        masked: no
+        state: restarted

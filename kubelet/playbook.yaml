@@ -1,0 +1,88 @@
+---
+- name: Setup Kubelet
+  hosts: workers
+  tasks:
+    - name: Import kubelet binary
+      become: yes
+      register: somefiles
+      copy:
+        src: ../bin/kubelet
+        dest: /usr/local/bin/kubelet
+        owner: root
+        group: root
+        mode: '0555'
+    - name: Create /var/lib/kubernetes
+      become: yes
+      register: somefiles
+      file:
+        path: /var/lib/kubernetes
+        state: directory
+    - name: Create /var/lib/kubelet
+      become: yes
+      register: somefiles
+      file:
+        path: /var/lib/kubelet
+        state: directory
+    - name: Import kubelet's kubeconfig
+      become: yes
+      register: somefiles
+      copy:
+        src: "{{ inventory_hostname }}.kubeconfig"
+        dest: /var/lib/kubelet/kubeconfig
+        owner: root
+        group: root
+        mode: '0440'
+    - name: Import kubelet's pem
+      become: yes
+      register: somefiles
+      copy:
+        src: "{{ inventory_hostname }}-kubelet.pem"
+        dest: "/var/lib/kubelet/{{ inventory_hostname }}.pem"
+        owner: root
+        group: root
+        mode: '0440'
+    - name: Import kubelet's key
+      become: yes
+      register: somefiles
+      copy:
+        src: "{{ inventory_hostname }}-kubelet-key.pem"
+        dest: "/var/lib/kubelet/{{ inventory_hostname }}-key.pem"
+        owner: root
+        group: root
+        mode: '0440'
+    - name: Import CA for kubelet
+      become: yes
+      register: somefiles
+      copy:
+        src: "../ca/ca.pem"
+        dest: /var/lib/kubernetes/ca.pem
+        owner: root
+        group: root
+        mode: '0440'
+    - name: Import kubelet-config.yaml
+      become: yes
+      register: somefiles
+      copy:
+        src: "{{ inventory_hostname }}_kubelet-config.yaml"
+        dest: /var/lib/kubelet/kubelet-config.yaml
+        owner: root
+        group: root
+        mode: '0440'
+    - name: Import kubelet service file
+      become: yes
+      register: somefiles
+      copy:
+        src: "kubelet.service"
+        dest: /etc/systemd/system/kubelet.service
+        owner: root
+        group: root
+        mode: '0444'
+    - name: start / restart kubelet service
+      become: yes
+      when: somefiles.changed
+      systemd:
+        name: kubelet
+        enabled: yes
+        daemon_reload: yes
+        masked: no
+        state: restarted

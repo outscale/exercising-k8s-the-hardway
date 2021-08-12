@@ -1,0 +1,16 @@
+{
+  "CN": "system:kube-controller-manager",
+  "key": {
+    "algo": "rsa",
+    "size": 2048
+  },
+  "names": [
+    {
+      "C": "FR",
+      "L": "Saint-Cloud",
+      "O": "system:kube-controller-manager",
+      "OU": "Outscale Kubernetes",
+      "ST": "IDF"
+    }
+  ]
+}

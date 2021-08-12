@@ -1,0 +1,8 @@
+---
+- name: Setup coredns
+  hosts: control-plane-0
+  tasks:
+    - name: Apply coredns-1.8.yaml
+      command:
+        cmd: "kubectl apply -f -"
+        stdin: "{{ lookup('file', 'coredns-1.8.yaml') }}"

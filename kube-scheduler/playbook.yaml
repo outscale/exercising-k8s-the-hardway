@@ -1,0 +1,61 @@
+---
+- name: Setup kube-scheduler service
+  hosts: control_planes
+  tasks:
+    - name: import kube-scheduler binary
+      become: yes
+      register: somefiles
+      copy:
+        src: ../bin/kube-scheduler
+        dest: /usr/local/bin/kube-scheduler
+        owner: root
+        group: root
+        mode: '0555'
+    - name: create /etc/kubernetes/config folder
+      become: yes
+      register: somefiles
+      file:
+        path: /etc/kubernetes/config
+        state: directory
+    - name: create /var/lib/kubernetes/ folder
+      become: yes
+      register: somefiles
+      file:
+        path: /var/lib/kubernetes/
+        state: directory
+    - name: import kube-scheduler.kubeconfig
+      become: yes
+      register: somefiles
+      copy:
+        src: kube-scheduler.kubeconfig
+        dest: /var/lib/kubernetes/kube-scheduler.kubeconfig
+        owner: root
+        group: root
+        mode: '0440'
+    - name: import kube-scheduler.yaml
+      become: yes
+      register: somefiles
+      copy:
+        src: kube-scheduler.yaml
+        dest: /etc/kubernetes/config/kube-scheduler.yaml
+        owner: root
+        group: root
+        mode: '0440'
+    - name: import kube-scheduler.service
+      become: yes
+      register: somefiles
+      copy:
+        src: kube-scheduler.service
+        dest: /etc/systemd/system/kube-scheduler.service
+        owner: root
+        group: root
+        mode: '0444'
+    - name: start / restart kube-scheduler service
+      become: yes
+      when: somefiles.changed
+      systemd:
+        name: kube-scheduler
+        enabled: yes
+        daemon_reload: yes
+        masked: no
+        state: restarted

@@ -1,0 +1,37 @@
+---
+- name: Setup CNI
+  hosts: workers
+  tasks:
+    - name: Create conf folder
+      become: yes
+      register: somefiles
+      file:
+        path: /etc/cni/net.d
+        state: directory
+    - name: import 10-bridge.conf
+      become: yes
+      register: somefiles
+      copy:
+        src: "{{ inventory_hostname }}_10-bridge.conf"
+        dest: /etc/cni/net.d/10-bridge.conf
+        owner: root
+        group: root
+        mode: '0444'
+    - name: import 99-loopback.conf
+      become: yes
+      register: somefiles
+      copy:
+        src: "99-loopback.conf"
+        dest: /etc/cni/net.d/99-loopback.conf
+        owner: root
+        group: root
+        mode: '0444'
+    - name: import cni binaries
+      become: yes
+      register: somefiles
+      copy:
+        src: "../bin/cni/"
+        dest: /opt/cni/bin
+        owner: root
+        group: root
+        mode: '0555'

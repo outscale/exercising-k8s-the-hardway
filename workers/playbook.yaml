@@ -1,0 +1,15 @@
+---
+- name: Setup workers
+  hosts: workers
+  tasks:
+    - name: Install software
+      become: yes
+      apt:
+        update_cache: yes
+        name:
+          - socat # for kubectl port-forward
+          - conntrack
+          - ipset
+    - name: Disable swap
+      command: swapoff -a
+      become: true

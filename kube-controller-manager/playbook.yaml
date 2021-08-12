@@ -1,0 +1,79 @@
+---
+- name: Setup kube-controller-manager service
+  hosts: control_planes
+  tasks:
+    - name: import kube-controller-manager binary
+      become: yes
+      register: somefiles
+      copy:
+        src: ../bin/kube-controller-manager
+        dest: /usr/local/bin/kube-controller-manager
+        owner: root
+        group: root
+        mode: '0555'
+    - name: create /etc/kubernetes/config folder
+      become: yes
+      register: somefiles
+      file:
+        path: /etc/kubernetes/config
+        state: directory
+    - name: create /var/lib/kubernetes/ folder
+      become: yes
+      register: somefiles
+      file:
+        path: /var/lib/kubernetes/
+        state: directory
+    - name: import ca.pem
+      become: yes
+      register: somefiles
+      copy:
+        src: ../ca/ca.pem
+        dest: /var/lib/kubernetes/ca.pem
+        owner: root
+        group: root
+        mode: '0440'
+    - name: import ca-key.pem
+      become: yes
+      register: somefiles
+      copy:
+        src: ../ca/ca-key.pem
+        dest: /var/lib/kubernetes/ca-key.pem
+        owner: root
+        group: root
+        mode: '0440'
+    - name: import service-account-key.pem
+      become: yes
+      register: somefiles
+      copy:
+        src: ../service-account/service-account-key.pem
+        dest: /var/lib/kubernetes/service-account-key.pem
+        owner: root
+        group: root
+        mode: '0440'
+    - name: import kube-controller-manager.kubeconfig
+      become: yes
+      register: somefiles
+      copy:
+        src: kube-controller-manager.kubeconfig
+        dest: /var/lib/kubernetes/kube-controller-manager.kubeconfig
+        owner: root
+        group: root
+        mode: '0440'
+    - name: import kube-controller-manager.service
+      become: yes
+      register: somefiles
+      copy:
+        src: kube-controller-manager.service
+        dest: /etc/systemd/system/kube-controller-manager.service
+        owner: root
+        group: root
+        mode: '0444'
+    - name: start / restart kube-controller-manager service
+      become: yes
+      when: somefiles.changed
+      systemd:
+        name: kube-controller-manager
+        enabled: yes
+        daemon_reload: yes
+        masked: no
+        state: restarted

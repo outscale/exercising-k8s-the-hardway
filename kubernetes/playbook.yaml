@@ -1,0 +1,117 @@
+---
+- name: Setup kube-api-server service
+  hosts: control_planes
+  tasks:
+    - name: import kube-api-server binary
+      become: yes
+      register: somefiles
+      copy:
+        src: ../bin/kube-apiserver
+        dest: /usr/local/bin/kube-apiserver
+        owner: root
+        group: root
+        mode: '0555'
+    - name: create /etc/kubernetes/config folder
+      become: yes
+      register: somefiles
+      file:
+        path: /etc/kubernetes/config
+        state: directory
+    - name: create /var/lib/kubernetes/ folder
+      become: yes
+      register: somefiles
+      file:
+        path: /var/lib/kubernetes/
+        state: directory
+    - name: import ca.pem
+      become: yes
+      register: somefiles
+      copy:
+        src: ../ca/ca.pem
+        dest: /var/lib/kubernetes/ca.pem
+        owner: root
+        group: root
+        mode: '0440'
+    - name: import ca-key.pem
+      become: yes
+      register: somefiles
+      copy:
+        src: ../ca/ca-key.pem
+        dest: /var/lib/kubernetes/ca-key.pem
+        owner: root
+        group: root
+        mode: '0440'
+    - name: import kubernetes.pem
+      become: yes
+      register: somefiles
+      copy:
+        src: ../kubernetes/kubernetes.pem
+        dest: /var/lib/kubernetes/kubernetes.pem
+        owner: root
+        group: root
+        mode: '0440'
+    - name: import kubernetes-key.pem
+      become: yes
+      register: somefiles
+      copy:
+        src: ../kubernetes/kubernetes-key.pem
+        dest: /var/lib/kubernetes/kubernetes-key.pem
+        owner: root
+        group: root
+        mode: '0440'
+    - name: import service-account.pem
+      become: yes
+      register: somefiles
+      copy:
+        src: ../service-account/service-account.pem
+        dest: /var/lib/kubernetes/service-account.pem
+        owner: root
+        group: root
+        mode: '0440'
+    - name: import service-account-key.pem
+      become: yes
+      register: somefiles
+      copy:
+        src: ../service-account/service-account-key.pem
+        dest: /var/lib/kubernetes/service-account-key.pem
+        owner: root
+        group: root
+        mode: '0440'
+    - name: import encryption-config.yaml
+      become: yes
+      register: somefiles
+      copy:
+        src: ../encryption/encryption-config.yaml
+        dest: /var/lib/kubernetes/encryption-config.yaml
+        owner: root
+        group: root
+        mode: '0440'
+    - name: import kube-apiserver.service
+      become: yes
+      register: somefiles
+      copy:
+        src: "{{ inventory_hostname }}_kube-apiserver.service"
+        dest: /etc/systemd/system/kube-apiserver.service
+        owner: root
+        group: root
+        mode: '0444'
+    - name: start / restart kube-apiserver service
+      become: yes
+      when: somefiles.changed
+      systemd:
+        name: kube-apiserver
+        enabled: yes
+        daemon_reload: yes
+        masked: no
+        state: restarted
+- name: Setup kubelet role on kube-apiserver
+  hosts: control-plane-0
+  tasks:
+    - name: Create cluster role
+      command:
+        cmd: "kubectl apply -f -"
+        stdin: "{{ lookup('file', 'kube-api-server-to-kubelet-clusterrole.yaml') }}"
+    - name: Apply cluster role binding
+      command:
+        cmd: "kubectl apply -f -"
+        stdin: "{{ lookup('file', 'kube-api-server-to-kubelet-clusterrolebinding.yaml') }}"

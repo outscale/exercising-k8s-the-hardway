@@ -1,0 +1,16 @@
+{
+  "CN": "system:kube-scheduler",
+  "key": {
+    "algo": "rsa",
+    "size": 2048
+  },
+  "names": [
+    {
+      "C": "FR",
+      "L": "Saint-Cloud",
+      "O": "system:kube-scheduler",
+      "OU": "Outscale Kubernetes",
+      "ST": "IDF"
+    }
+  ]
+}

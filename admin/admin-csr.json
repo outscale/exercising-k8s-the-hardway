@@ -1,0 +1,16 @@
+{
+  "CN": "admin",
+  "key": {
+    "algo": "rsa",
+    "size": 2048
+  },
+  "names": [
+    {
+      "C": "FR",
+      "L": "Saint-Cloud",
+      "O": "system:masters",
+      "OU": "Outscale Kubernetes",
+      "ST": "IDF"
+    }
+  ]
+}
