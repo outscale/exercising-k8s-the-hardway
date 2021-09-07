@@ -10,3 +10,4 @@ variable "cluster_name" {}
 variable "kubernetes_version" {}
 variable "terraform_os" {}
 variable "terraform_arch" {}
+variable "with_cloud_provider" {}

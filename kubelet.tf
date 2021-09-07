@@ -1,9 +1,13 @@
+locals {
+  node_names = [for i in range(var.worker_count) : format("ip-10-0-1-%d.eu-west-2.compute.internal", 10 + i)]
+}
+
 resource "local_file" "workers-kubelet-csr-json" {
   count    = var.worker_count
   filename = "${path.module}/kubelet/worker-${count.index}-kubelet-csr.json"
   content  = <<-EOF
 {
-  "CN": "system:node:ip-10-0-1-${10 + count.index}",
+  "CN": "system:node:${local.node_names[count.index]}",
   "key": {
     "algo": "rsa",
     "size": 2048
@@ -21,6 +25,36 @@ resource "local_file" "workers-kubelet-csr-json" {
   EOF
 }
 
+resource "local_file" "worker-kubelet-service" {
+  count    = var.worker_count
+  filename = "${path.module}/kubelet/worker-${count.index}-kubelet.service"
+  content  = <<-EOF
+[Unit]
+Description=Kubernetes Kubelet
+Documentation=https://github.com/kubernetes/kubernetes
+After=containerd.service
+Requires=containerd.service
+
+[Service]
+ExecStart=/usr/local/bin/kubelet \
+  --config=/var/lib/kubelet/kubelet-config.yaml \
+  --container-runtime=remote \
+  --container-runtime-endpoint=unix:///var/run/containerd/containerd.sock \
+  --image-pull-progress-deadline=2m \
+  --kubeconfig=/var/lib/kubelet/kubeconfig \
+  --network-plugin=cni \
+  --register-node=true \
+  ${var.with_cloud_provider ? "--cloud-provider=external" : ""} \
+  --hostname-override=${local.node_names[count.index]} \
+  --v=2
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+EOF
+}
+
 resource "shell_script" "workers-kubelet" {
   count = var.worker_count
   lifecycle_commands {
@@ -29,7 +63,7 @@ resource "shell_script" "workers-kubelet" {
             -ca=../ca/ca.pem \
             -ca-key=../ca/ca-key.pem \
             -config=../ca/ca-config.json \
-            -hostname=ip-10-0-1-${10 + count.index},${format("10.0.1.%d", 10 + count.index)} \
+            -hostname=${local.node_names[count.index]},${format("10.0.1.%d", 10 + count.index)} \
             -profile=kubernetes \
             worker-${count.index}-kubelet-csr.json \
             | ../bin/cfssljson -bare worker-${count.index}-kubelet
@@ -58,14 +92,14 @@ resource "shell_script" "workers-kubelet-kubeconfig" {
             --embed-certs=true \
             --server=https://${outscale_load_balancer.kubernetes-lb.dns_name}:6443 \
             --kubeconfig=worker-${count.index}.kubeconfig
-	../bin/kubectl-local config set-credentials system:node:ip-10-0-1-${10 + count.index} \
+	../bin/kubectl-local config set-credentials system:node:${local.node_names[count.index]} \
             --client-certificate=worker-${count.index}-kubelet.pem \
             --client-key=worker-${count.index}-kubelet-key.pem \
             --embed-certs=true \
             --kubeconfig=worker-${count.index}.kubeconfig
 	../bin/kubectl-local config set-context default \
             --cluster=${var.cluster_name} \
-            --user=system:node:ip-10-0-1-${10 + count.index} \
+            --user=system:node:${local.node_names[count.index]} \
             --kubeconfig=worker-${count.index}.kubeconfig
 	../bin/kubectl-local config use-context default \
             --kubeconfig=worker-${count.index}.kubeconfig

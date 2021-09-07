@@ -1,0 +1,12 @@
+---
+- name: Setup cloud-provider-osc service
+  hosts: control-plane-0
+  tasks:
+    - name: Create cloud-provider-osc secrets
+      command:
+        cmd: "kubectl apply -f -"
+        stdin: "{{ lookup('file', 'secrets.yaml') }}"
+    - name: Deploy CCM service
+      command:
+        cmd: "kubectl apply -f -"
+        stdin: "{{ lookup('file', 'ccm.yaml') }}"

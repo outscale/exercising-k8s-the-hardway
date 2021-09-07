@@ -72,7 +72,7 @@
       become: yes
       register: somefiles
       copy:
-        src: "kubelet.service"
+        src: "{{ inventory_hostname }}-kubelet.service"
         dest: /etc/systemd/system/kubelet.service
         owner: root
         group: root

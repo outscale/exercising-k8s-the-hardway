@@ -11,3 +11,4 @@ cluster_name          = "phandalin"
 kubernetes_version    = "v1.21.0"
 terraform_os          = "linux"
 terraform_arch        = "amd64"
+with_cloud_provider   = false

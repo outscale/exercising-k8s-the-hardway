@@ -2,10 +2,18 @@ resource "outscale_subnet" "workers" {
   net_id         = outscale_net.net.net_id
   ip_range       = "10.0.1.0/24"
   subregion_name = "${var.region}a"
+  tags {
+    key   = "OscK8sClusterID/${var.cluster_name}"
+    value = "owned"
+  }
 }
 
 resource "outscale_route_table" "workers" {
   net_id = outscale_net.net.net_id
+  tags {
+    key   = "OscK8sClusterID/${var.cluster_name}"
+    value = "owned"
+  }
 }
 
 resource "outscale_route" "workers-default" {
@@ -47,6 +55,10 @@ resource "outscale_keypair" "workers" {
 resource "outscale_security_group" "worker" {
   description = "Kubernetes workers (${var.cluster_name})"
   net_id      = outscale_net.net.net_id
+  tags {
+    key   = "OscK8sClusterID/${var.cluster_name}"
+    value = "owned"
+  }
 }
 
 resource "outscale_security_group_rule" "worker-ssh" {
@@ -84,8 +96,15 @@ resource "outscale_vm" "workers" {
     key   = "name"
     value = "${var.cluster_name}-worker-${count.index}"
   }
+  tags {
+    key   = "OscK8sClusterID/${var.cluster_name}"
+    value = "owned"
+  }
+  tags {
+    key   = "OscK8sNodeName"
+    value = local.node_names[count.index]
+  }
 }
-
 resource "shell_script" "workers-playbook" {
   lifecycle_commands {
     create = <<-EOF

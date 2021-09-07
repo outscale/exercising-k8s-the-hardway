@@ -8,7 +8,6 @@ Its purpose is mainly to play with Kubernetes, Terraform and Ansible on [Outscal
 
 Note that this project only follow the tutorial and has a number limitation like:
 - Services IPs are only available on worker nodes
-- Load Balancer services are not available (no CCM)
 - No Ingress Controller installed
 - Storage management is not availabled (no CSI)
 
@@ -22,6 +21,7 @@ Additional services deployed:
 - A [Load-balancer](https://wiki.outscale.net/display/EN/About+Load+Balancers) distributes Kubernetes's API traffic on control-planes.
 - A [NAT Service](https://wiki.outscale.net/display/EN/About+NAT+Gateways) is created to provide internet access to workers.
 - Each control-plane has a public IP and are used as a bastion host to access worker nodes.
+- Cloud controller manager (CCM) can be enabled in to run Service of type Load Balancer
 
 # Prerequisite
 
@@ -37,7 +37,7 @@ export TF_VAR_secret_key_id="mysecretkey"
 export TF_VAR_region="eu-west-2"
 ```
 
-By editing ['terraform.tfvars'](terraform.tfvars), you can adjust the number of nodes, kubernetes version, etc.
+By editing ['terraform.tfvars'](terraform.tfvars), you can adjust the number of nodes, kubernetes version, enabling CCM, etc.
 Depending of your operating system, you may have to adapt `terraform_os` and `terraform_arch` variables.
 
 For macOS:
