@@ -77,6 +77,8 @@ Note that worker nodes may take few seconds to register to Kubernetes.
 Smoke testing our newly created Kubernetes cluster can be done very similarely to [kubernetes-the-hard-way](https://github.com/kelseyhightower/kubernetes-the-hard-way/blob/master/docs/13-smoke-test.md).
 Note that workers has no public IP so you can test Nodeport service from one control-plane.
 
+You can also deploy a Service of type Load Balancer by setting `with_example_2048=true` (need `with_cloud_provider` enabled as well). You can get the load-balancer URL through `kubectl get service -n 2048`.
+
 # Cleaning Up
 
 Just run `terraform destroy`.
