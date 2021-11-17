@@ -96,10 +96,12 @@ resource "outscale_vm" "workers" {
     key   = "name"
     value = "${var.cluster_name}-worker-${count.index}"
   }
-  tags {
-    key   = "OscK8sClusterID/${var.cluster_name}"
-    value = "owned"
-  }
+  # A bug in metadata make cloud-init crash
+  # this tag is only needed for CCM
+  #tags {
+  #  key   = "OscK8sClusterID/${var.cluster_name}"
+  #  value = "owned"
+  #}
   tags {
     key   = "OscK8sNodeName"
     value = local.node_names[count.index]

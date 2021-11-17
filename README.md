@@ -40,6 +40,12 @@ export TF_VAR_region="eu-west-2"
 By editing ['terraform.tfvars'](terraform.tfvars), you can adjust the number of nodes, kubernetes version, enabling CCM, etc.
 Depending of your operating system, you may have to adapt `terraform_os` and `terraform_arch` variables.
 
+Note about CCM: due to a meta-data bug (to be fixed), you will have to enable it in two steps:
+1. run `terraform apply`
+2. In `terraform.tfvars`: set `with_cloud_provider` to `true`.
+3. In `workers.tf`, uncomment "OscK8sClusterID" tag in `outscale_vm` resource.
+4. run again `terraform apply`
+
 For macOS:
 ```
 terraform_os = "darwin"
