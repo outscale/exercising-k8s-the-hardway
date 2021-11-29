@@ -3,6 +3,7 @@ resource "shell_script" "coredns-yaml" {
     create = <<-EOF
         mkdir -p coredns
         wget -q --https-only --timestamping "https://storage.googleapis.com/kubernetes-the-hard-way/coredns-1.8.yaml" -O coredns/coredns-1.8.yaml
+        sed -i "s%loadbalance%loadbalance\n\tforward . /etc/resolv%" coredns/coredns-1.8.yaml
     EOF
     read   = <<-EOF
         echo "{\"md5\": \"$(md5sum coredns/coredns-1.8.yaml|base64)\"}"
