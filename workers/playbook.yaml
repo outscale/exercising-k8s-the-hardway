@@ -13,3 +13,6 @@
     - name: Disable swap
       command: swapoff -a
       become: true
+    - name: Add modprobe support for DNS
+      command: modprobe br_netfilter
+      become: true
