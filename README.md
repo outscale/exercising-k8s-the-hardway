@@ -14,13 +14,13 @@ Note that this project only follow the tutorial and has a number limitation like
 
 # Architecture
 
-The Kubernetes cluster is deployed inside a [Net](https://wiki.outscale.net/display/EN/About+VPCs) with two [Subnets](https://wiki.outscale.net/display/EN/Getting+Information+About+Your+Subnets):
+The Kubernetes cluster is deployed inside a [Net](https://docs.outscale.com/en/userguide/About-Nets.html) with two [Subnets](https://docs.outscale.com/en/userguide/Getting-Information-About-Your-Subnets.html):
 - One subnet for control-plane nodes (3 VM by default)
 - One subnet for worker nodes (2 VM by default)
 
 Additional services deployed:
-- A [Load-balancer](https://wiki.outscale.net/display/EN/About+Load+Balancers) distributes Kubernetes's API traffic on control-planes.
-- A [NAT Service](https://wiki.outscale.net/display/EN/About+NAT+Gateways) is created to provide internet access to workers.
+- A [Load-balancer](https://docs.outscale.com/en/userguide/About-Load-Balancers.html) distributes Kubernetes's API traffic on control-planes.
+- A [NAT Service](https://docs.outscale.com/en/userguide/About-NAT-Services.html) is created to provide internet access to workers.
 - Each control-plane has a public IP and are used as a bastion host to access worker nodes.
 - Cloud controller manager (CCM) can be enabled in to run Service of type Load Balancer
 
@@ -28,7 +28,7 @@ Additional services deployed:
 
 - [Terraform](https://www.terraform.io/) (>= 0.14)
 - [Ansible](https://www.ansible.com/) (>= 2.4)
-- [Outscale Access Key and Secret Key](https://wiki.outscale.net/display/EN/Creating+an+Access+Key)
+- [Outscale Access Key and Secret Key](https://docs.outscale.com/en/userguide/Creating-an-Access-Key.html)
 
 # Configuration
 
