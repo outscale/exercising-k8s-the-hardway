@@ -7,6 +7,10 @@ resource "outscale_subnet" "control-planes" {
     key   = "OscK8sClusterID/${var.cluster_name}"
     value = "owned"
   }
+  tags {
+    key   = "name"
+    value = "${var.cluster_name}-control-plane"
+  }
 }
 
 resource "outscale_route_table" "control-planes" {
@@ -29,16 +33,6 @@ resource "outscale_route_table_link" "control-planes" {
   route_table_id = outscale_route_table.control-planes.route_table_id
 }
 
-resource "outscale_public_ip" "control-planes" {
-  count = var.control_plane_count
-}
-
-resource "outscale_public_ip_link" "control-planes" {
-  count     = var.control_plane_count
-  vm_id     = outscale_vm.control-planes[count.index].vm_id
-  public_ip = outscale_public_ip.control-planes[count.index].public_ip
-}
-
 resource "tls_private_key" "control-planes" {
   count     = var.control_plane_count
   algorithm = "RSA"
@@ -55,11 +49,16 @@ resource "local_file" "control-planes-pem" {
 resource "outscale_keypair" "control-planes" {
   count      = var.control_plane_count
   public_key = tls_private_key.control-planes[count.index].public_key_openssh
+  keypair_name = "${var.cluster_name}-control-plane-${count.index}"
 }
 
 resource "outscale_security_group" "control-plane" {
-  description = "Kubernetes control-planes (${var.cluster_name})"
+  description = "Kubernetes control-plane (${var.cluster_name})"
   net_id      = outscale_net.net.net_id
+  tags {
+    key   = "name"
+    value = "${var.cluster_name}-control-plane"
+  }
 }
 
 resource "outscale_security_group_rule" "control-plane-ssh" {
@@ -107,11 +106,6 @@ resource "outscale_vm" "control-planes" {
   private_ips        = [format("10.0.0.%d", 10 + count.index)]
 
   tags {
-    key   = "osc.fcu.eip.auto-attach"
-    value = outscale_public_ip.control-planes[count.index].public_ip
-  }
-
-  tags {
     key   = "name"
     value = "${var.cluster_name}-control-plane-${count.index}"
   }
@@ -132,5 +126,5 @@ resource "shell_script" "control-planes-playbook" {
     EOF
     delete = ""
   }
-  depends_on = [outscale_public_ip_link.control-planes]
+  depends_on = [outscale_vm.control-planes, local_file.ssh_config, local_file.hosts, outscale_public_ip_link.bastion]
 }

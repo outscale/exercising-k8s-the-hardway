@@ -2,6 +2,10 @@
 - name: Setup Kubelet
   hosts: workers
   tasks:
+    - name: Hostname
+      become: yes
+      ansible.builtin.hostname:
+        name: "{{ inventory_hostname }}"
     - name: Import kubelet binary
       become: yes
       register: somefiles
@@ -72,8 +76,8 @@
       become: yes
       register: somefiles
       copy:
-        src: "{{ inventory_hostname }}-kubelet.service"
-        dest: /etc/systemd/system/kubelet.service
+        src: kubelet.service
+        dest: /etc/systemd/system/
         owner: root
         group: root
         mode: '0444'

@@ -1,4 +1,9 @@
-resource "outscale_public_ip" "kubernetes-lb" {}
+resource "outscale_public_ip" "kubernetes-lb" {
+  tags {
+    key   = "name"
+    value = "${var.cluster_name}-lb"
+  }
+}
 
 
 resource "outscale_security_group" "kubernetes-lb" {

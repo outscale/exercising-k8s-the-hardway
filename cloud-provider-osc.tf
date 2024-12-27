@@ -30,7 +30,7 @@ resource "shell_script" "cloud-provider-osc-playbook" {
         ANSIBLE_CONFIG=ansible.cfg ansible-playbook cloud-provider-osc/playbook.yaml
     EOF
     read   = <<-EOF
-        echo "{\"file\": \"$(cat cloud-provider-osc/playbook.yaml|base64)\",
+        echo "{\"file\": \"$(cat cloud-provider-osc/*.yaml|base64)\",
                \"check\": \"$(ANSIBLE_CONFIG=ansible.cfg ansible-playbook --check cloud-provider-osc/playbook.yaml|base64)\"
               }"
     EOF

@@ -1,13 +1,10 @@
-locals {
-  node_names = [for i in range(var.worker_count) : format("ip-10-0-1-%d.eu-west-2.compute.internal", 10 + i)]
-}
 
 resource "local_file" "workers-kubelet-csr-json" {
   count    = var.worker_count
   filename = "${path.module}/kubelet/worker-${count.index}-kubelet-csr.json"
   content  = <<-EOF
 {
-  "CN": "system:node:${local.node_names[count.index]}",
+  "CN": "system:node:worker-${count.index}",
   "key": {
     "algo": "rsa",
     "size": 2048
@@ -25,36 +22,6 @@ resource "local_file" "workers-kubelet-csr-json" {
   EOF
 }
 
-resource "local_file" "worker-kubelet-service" {
-  count    = var.worker_count
-  filename = "${path.module}/kubelet/worker-${count.index}-kubelet.service"
-  content  = <<-EOF
-[Unit]
-Description=Kubernetes Kubelet
-Documentation=https://github.com/kubernetes/kubernetes
-After=containerd.service
-Requires=containerd.service
-
-[Service]
-ExecStart=/usr/local/bin/kubelet \
-  --config=/var/lib/kubelet/kubelet-config.yaml \
-  --container-runtime=remote \
-  --container-runtime-endpoint=unix:///var/run/containerd/containerd.sock \
-  --image-pull-progress-deadline=2m \
-  --kubeconfig=/var/lib/kubelet/kubeconfig \
-  --network-plugin=cni \
-  --register-node=true \
-  ${var.with_cloud_provider ? "--cloud-provider=external" : ""} \
-  --hostname-override=${local.node_names[count.index]} \
-  --v=2
-Restart=on-failure
-RestartSec=5
-
-[Install]
-WantedBy=multi-user.target
-EOF
-}
-
 resource "shell_script" "workers-kubelet" {
   count = var.worker_count
   lifecycle_commands {
@@ -63,7 +30,7 @@ resource "shell_script" "workers-kubelet" {
             -ca=../ca/ca.pem \
             -ca-key=../ca/ca-key.pem \
             -config=../ca/ca-config.json \
-            -hostname=${local.node_names[count.index]},${format("10.0.1.%d", 10 + count.index)} \
+            -hostname=worker-${count.index} \
             -profile=kubernetes \
             worker-${count.index}-kubelet-csr.json \
             | ../bin/cfssljson -bare worker-${count.index}-kubelet
@@ -92,14 +59,14 @@ resource "shell_script" "workers-kubelet-kubeconfig" {
             --embed-certs=true \
             --server=https://${outscale_load_balancer.kubernetes-lb.dns_name}:6443 \
             --kubeconfig=worker-${count.index}.kubeconfig
-	../bin/kubectl-local config set-credentials system:node:${local.node_names[count.index]} \
+	../bin/kubectl-local config set-credentials system:node:worker-${count.index} \
             --client-certificate=worker-${count.index}-kubelet.pem \
             --client-key=worker-${count.index}-kubelet-key.pem \
             --embed-certs=true \
             --kubeconfig=worker-${count.index}.kubeconfig
 	../bin/kubectl-local config set-context default \
             --cluster=${var.cluster_name} \
-            --user=system:node:${local.node_names[count.index]} \
+            --user=system:node:worker-${count.index} \
             --kubeconfig=worker-${count.index}.kubeconfig
 	../bin/kubectl-local config use-context default \
             --kubeconfig=worker-${count.index}.kubeconfig
@@ -134,6 +101,8 @@ clusterDomain: "cluster.local"
 clusterDNS:
   - "10.32.0.10"
 podCIDR: "10.200.${count.index}.0/24"
+cgroupDriver: systemd
+containerRuntimeEndpoint: "unix:///var/run/containerd/containerd.sock"
 resolvConf: "/run/systemd/resolve/resolv.conf"
 runtimeRequestTimeout: "15m"
 tlsCertFile: "/var/lib/kubelet/worker-${count.index}.pem"
@@ -145,10 +114,10 @@ resource "shell_script" "kubelet-bin" {
   lifecycle_commands {
     create = <<-EOF
         mkdir -p bin
-        wget -q --https-only --timestamping "https://storage.googleapis.com/kubernetes-release/release/${var.kubernetes_version}/bin/linux/amd64/kubelet" -O bin/kubelet
+        wget -q --https-only --timestamping "https://dl.k8s.io/v${var.kubernetes_version}/bin/linux/amd64/kubelet" -O bin/kubelet
     EOF
     read   = <<-EOF
-        echo "{\"md5\": \"$(md5sum bin/kubelet|base64)\"}"
+        echo "{\"md5\": \"$(md5sum bin/kubelet|base64)\", \"version\": \"${var.kubernetes_version}\"}"
     EOF
     delete = "rm -f bin/kubelet"
   }

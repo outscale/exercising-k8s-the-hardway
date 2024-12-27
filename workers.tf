@@ -50,6 +50,7 @@ resource "local_file" "workers-pem" {
 resource "outscale_keypair" "workers" {
   count      = var.worker_count
   public_key = tls_private_key.workers[count.index].public_key_openssh
+  keypair_name = "${var.cluster_name}-worker-${count.index}"
 }
 
 resource "outscale_security_group" "worker" {
@@ -58,6 +59,10 @@ resource "outscale_security_group" "worker" {
   tags {
     key   = "OscK8sClusterID/${var.cluster_name}"
     value = "owned"
+  }
+  tags {
+    key   = "name"
+    value = "${var.cluster_name}-worker"
   }
 }
 
@@ -76,7 +81,12 @@ resource "outscale_security_group_rule" "worker-ssh" {
   }
 }
 
-resource "outscale_public_ip" "workers-nat" {}
+resource "outscale_public_ip" "workers-nat" {
+    tags {
+    key   = "name"
+    value = "${var.cluster_name}-workers"
+  }
+}
 
 resource "outscale_nat_service" "workers" {
   subnet_id    = outscale_subnet.control-planes.subnet_id
@@ -98,15 +108,16 @@ resource "outscale_vm" "workers" {
   }
   # A bug in metadata make cloud-init crash
   # this tag is only needed for CCM
-  #tags {
-  #  key   = "OscK8sClusterID/${var.cluster_name}"
-  #  value = "owned"
-  #}
+  tags {
+    key   = "OscK8sClusterID/${var.cluster_name}"
+    value = "owned"
+  }
   tags {
     key   = "OscK8sNodeName"
-    value = local.node_names[count.index]
+    value = "worker-${count.index}"
   }
 }
+
 resource "shell_script" "workers-playbook" {
   lifecycle_commands {
     create = <<-EOF
@@ -122,5 +133,5 @@ resource "shell_script" "workers-playbook" {
     EOF
     delete = ""
   }
-  depends_on = [outscale_vm.workers, shell_script.control-planes-playbook]
+  depends_on = [outscale_vm.workers, local_file.hosts, local_file.ssh_config, outscale_public_ip_link.bastion]
 }

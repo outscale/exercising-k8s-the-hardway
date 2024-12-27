@@ -35,6 +35,24 @@
         owner: root
         group: root
         mode: '0440'
+    - name: Import kube-proxy's pem
+      become: yes
+      register: somefiles
+      copy:
+        src: "kube-proxy.pem"
+        dest: "/var/lib/kube-proxy"
+        owner: root
+        group: root
+        mode: '0440'
+    - name: Import kube-proxy's key
+      become: yes
+      register: somefiles
+      copy:
+        src: "kube-proxy-key.pem"
+        dest: "/var/lib/kube-proxy"
+        owner: root
+        group: root
+        mode: '0440'
     - name: Create systemd conf folder
       become: yes
       register: somefiles

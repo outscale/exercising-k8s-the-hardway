@@ -1,3 +1,5 @@
+---
+# Source: osc-cloud-controller-manager/templates/serviceaccount.yaml
 # ServiceAccount Def
 apiVersion: v1
 kind: ServiceAccount
@@ -5,21 +7,7 @@ metadata:
   name: cloud-controller-manager
   namespace: kube-system
 ---
-apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata:
-  name: cloud-controller-manager:apiserver-authentication-reader
-  namespace: kube-system
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: Role
-  name: extension-apiserver-authentication-reader
-subjects:
-- apiGroup: ""
-  kind: ServiceAccount
-  name: cloud-controller-manager
-  namespace: kube-system
----
+# Source: osc-cloud-controller-manager/templates/osc-ccm.yaml
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -36,9 +24,39 @@ rules:
 - apiGroups:
   - ""
   resources:
+  - serviceaccounts
+  verbs:
+  - create
+- apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
+  verbs:
+  - create
+  - get
+  - list
+  - update
+  - watch
+- apiGroups:
+  - ""
+  resourceNames:
+  - node-controller
+  - service-controller
+  - route-controller
+  resources:
+  - serviceaccounts/token
+  verbs:
+  - create
+- apiGroups:
+  - ""
+  resources:
   - nodes
   verbs:
-  - '*'
+  - get
+  - list
+  - patch
+  - update
+  - watch
 - apiGroups:
   - ""
   resources:
@@ -59,24 +77,9 @@ rules:
   resources:
   - services/status
   verbs:
-  - list
   - patch
   - update
-  - watch
-- apiGroups:
-  - ""
-  resources:
-  - serviceaccounts
-  verbs:
-  - create
-- apiGroups:
-  - ""
-  resources:
-  - persistentvolumes
-  verbs:
-  - get
   - list
-  - update
   - watch
 - apiGroups:
   - ""
@@ -86,22 +89,11 @@ rules:
   - create
   - get
   - list
-  - watch
   - update
-- apiGroups:
-  - coordination.k8s.io
-  resources:
-  - leases
-  verbs:
-  - create
-  - get
-  - list
   - watch
-  - update
 ---
-
+# Source: osc-cloud-controller-manager/templates/osc-ccm.yaml
 # CCM Service
----
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
@@ -111,11 +103,28 @@ roleRef:
   kind: ClusterRole
   name: cluster-admin
 subjects:
-  - kind: ServiceAccount
-    name: cloud-controller-manager
-    namespace: kube-system
-
+- apiGroup: ""
+  kind: ServiceAccount
+  name: cloud-controller-manager
+  namespace: kube-system
 ---
+# Source: osc-cloud-controller-manager/templates/osc-ccm.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: cloud-controller-manager:apiserver-authentication-reader
+  namespace: kube-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: extension-apiserver-authentication-reader
+subjects:
+- apiGroup: ""
+  kind: ServiceAccount
+  name: cloud-controller-manager
+  namespace: kube-system
+---
+# Source: osc-cloud-controller-manager/templates/osc-ccm.yaml
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -127,70 +136,85 @@ spec:
   selector:
     matchLabels:
       app: osc-cloud-controller-manager
+  updateStrategy:
+    type: RollingUpdate
   template:
     metadata:
       labels:
         app: osc-cloud-controller-manager
     spec:
       serviceAccountName: cloud-controller-manager
+      imagePullSecrets:
+        - name: registry-dockerconfigjson
       containers:
         - name: osc-cloud-controller-manager
-          image: outscale/cloud-provider-osc:v0.0.8beta
+          image: outscale/cloud-provider-osc:v0.2.6
           imagePullPolicy: IfNotPresent
           command:
             - /bin/osc-cloud-controller-manager
-            - --leader-elect=true
+            - --configure-cloud-routes=false
             - --cloud-provider=osc
-            - -v=10
-            - --logtostderr
+            - -v=5
           env:
             - name: OSC_ACCOUNT_ID
               valueFrom:
                 secretKeyRef:
-                  name: "osc-secret"
+                  name: osc-secret
                   key: osc_account_id
                   optional: false
             - name: OSC_ACCOUNT_IAM
               valueFrom:
                 secretKeyRef:
-                  name: "osc-secret"
+                  name: osc-secret
                   key: osc_account_iam
                   optional: false
             - name: OSC_USER_ID
               valueFrom:
                 secretKeyRef:
-                  name: "osc-secret"
+                  name: osc-secret
                   key: osc_user_id
                   optional: false
             - name: OSC_ARN
               valueFrom:
                 secretKeyRef:
-                  name: "osc-secret"
+                  name: osc-secret
                   key: osc_arn
                   optional: false
             - name: AWS_ACCESS_KEY_ID
               valueFrom:
                 secretKeyRef:
-                  name: "osc-secret"
+                  name: osc-secret
                   key: key_id
                   optional: false
             - name: AWS_SECRET_ACCESS_KEY
               valueFrom:
                 secretKeyRef:
-                  name: "osc-secret"
+                  name: osc-secret
                   key: access_key
                   optional: false
             - name: AWS_DEFAULT_REGION
               valueFrom:
                 secretKeyRef:
-                  name: "osc-secret"
+                  name: osc-secret
                   key: aws_default_region
                   optional: false
             - name: AWS_AVAILABILITY_ZONES
               valueFrom:
                 secretKeyRef:
-                  name: "osc-secret"
+                  name: osc-secret
                   key: aws_availability_zones
+                  optional: false
+            - name: OSC_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: osc-secret
+                  key: access_key
+                  optional: false
+            - name: OSC_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: osc-secret
+                  key: key_id
                   optional: false
       hostNetwork: true
       tolerations:
@@ -203,5 +227,5 @@ spec:
         # cloud controller manages should be able to run on masters
         # this is to have the daemonset runnable on master nodes
         # the taint may vary depending on your cluster setup
-        - key: node-role.kubernetes.io/master
+        - key: node-role.kubernetes.io/control-plane
           effect: NoSchedule
