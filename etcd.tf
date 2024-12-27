@@ -2,13 +2,13 @@ resource "shell_script" "etcd-bin" {
   lifecycle_commands {
     create = <<-EOF
         mkdir -p bin
-        wget -q --https-only --timestamping "https://github.com/etcd-io/etcd/releases/download/v3.5.0/etcd-v3.5.0-linux-amd64.tar.gz" -O etcd.tar.gz
+        wget -q --https-only --timestamping "https://github.com/etcd-io/etcd/releases/download/v${var.etcd_version}/etcd-v${var.etcd_version}-linux-amd64.tar.gz" -O etcd.tar.gz
         tar zxvf etcd.tar.gz
-        mv etcd-v3.5.0-linux-amd64/etcd* ./bin
-        rm -rf etcd-v3.5.0-linux-amd64 etcd.tar.gz
+        mv etcd-v${var.etcd_version}-linux-amd64/etcd* ./bin
+        rm -rf etcd-v${var.etcd_version}-linux-amd64 etcd.tar.gz
     EOF
     read   = <<-EOF
-        echo "{\"md5\": \"$(md5sum bin/etcd*|base64)\", \"version\": \"$(./bin/etcd --version 2> /dev/null)\"}"
+        echo "{\"md5\": \"$(md5sum bin/etcd*|base64)\", \"version\": \"${var.etcd_version}\"}"
     EOF
     delete = "rm -f bin/etcd*"
   }

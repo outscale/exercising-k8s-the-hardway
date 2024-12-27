@@ -4,4 +4,8 @@ resource "outscale_net" "net" {
     key   = "OscK8sClusterID/${var.cluster_name}"
     value = "owned"
   }
+  tags {
+    key   = "name"
+    value = "${var.cluster_name}"
+  }
 }

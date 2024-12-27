@@ -62,10 +62,10 @@ resource "shell_script" "kube-proxy-bin" {
   lifecycle_commands {
     create = <<-EOF
         mkdir -p bin
-        wget -q --https-only --timestamping "https://storage.googleapis.com/kubernetes-release/release/${var.kubernetes_version}/bin/linux/amd64/kube-proxy" -O bin/kube-proxy
+        wget -q --https-only --timestamping "https://dl.k8s.io/v${var.kubernetes_version}/bin/linux/amd64/kube-proxy" -O bin/kube-proxy
     EOF
     read   = <<-EOF
-        echo "{\"md5\": \"$(md5sum bin/kube-proxy|base64)\"}"
+        echo "{\"md5\": \"$(md5sum bin/kube-proxy|base64)\", \"version\": \"${var.kubernetes_version}\"}"
     EOF
     delete = "rm -f bin/kube-proxy"
   }

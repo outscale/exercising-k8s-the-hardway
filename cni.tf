@@ -4,7 +4,7 @@ resource "local_file" "cni-bridge-conf" {
   file_permission = "0660"
   content         = <<-EOF
 {
-    "cniVersion": "0.4.0",
+    "cniVersion": "1.0.0",
     "name": "bridge",
     "type": "bridge",
     "bridge": "cnio0",
@@ -25,12 +25,12 @@ resource "shell_script" "cni-bin" {
   lifecycle_commands {
     create = <<-EOF
         mkdir -p bin/cni
-        wget -q --https-only --timestamping "https://github.com/containernetworking/plugins/releases/download/v0.9.1/cni-plugins-linux-amd64-v0.9.1.tgz" -O cni.tgz
+        wget -q --https-only --timestamping "https://github.com/containernetworking/plugins/releases/download/v${var.cni_version}/cni-plugins-linux-amd64-v${var.cni_version}.tgz" -O cni.tgz
         tar -xvf cni.tgz -C bin/cni
         rm -f cni.tgz
     EOF
     read   = <<-EOF
-        echo "{\"md5\": \"$(md5sum bin/cni/*|base64)\"}"
+        echo "{\"md5\": \"$(md5sum bin/cni/*|base64)\", \"version\": \"${var.cni_version}\"}"
     EOF
     delete = "rm -rf bin/cni"
   }

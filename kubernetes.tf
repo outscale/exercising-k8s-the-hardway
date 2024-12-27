@@ -10,7 +10,7 @@ resource "shell_script" "kubernetes" {
             -ca-key=../ca/ca-key.pem \
             -config=../ca/ca-config.json \
             -profile=kubernetes \
-            -hostname=10.32.0.1,127.0.0.1,kubernetes,kubernetes.default,kubernetes.default.svc,kubernetes.default.svc.cluster,kubernetes.svc.cluster.local,${join(",", [for i in range(var.control_plane_count) : format("10.0.0.%d", 10 + i)])},${join(",", [for eip in outscale_public_ip.control-planes : eip.public_ip])},${outscale_load_balancer.kubernetes-lb.dns_name} \
+            -hostname=10.32.0.1,127.0.0.1,kubernetes,kubernetes.default,kubernetes.default.svc,kubernetes.default.svc.cluster,kubernetes.svc.cluster.local,${join(",", [for i in range(var.control_plane_count) : format("10.0.0.%d", 10 + i)])},${outscale_load_balancer.kubernetes-lb.dns_name} \
             kubernetes-csr.json \
             | ../bin/cfssljson -bare kubernetes
     EOF
@@ -33,11 +33,10 @@ resource "shell_script" "kube-apiserver-bin" {
   lifecycle_commands {
     create = <<-EOF
         mkdir -p bin
-        wget -q --https-only --timestamping "https://storage.googleapis.com/kubernetes-release/release/${var.kubernetes_version}/bin/linux/amd64/kube-apiserver" -O bin/kube-apiserver
-        chmod +x bin/kube-apiserver
+        wget -q --https-only --timestamping "https://dl.k8s.io/v${var.kubernetes_version}/bin/linux/amd64/kube-apiserver" -O bin/kube-apiserver
     EOF
     read   = <<-EOF
-        echo "{\"md5\": \"$(md5sum bin/kube-apiserver|base64)\"}"
+        echo "{\"md5\": \"$(md5sum bin/kube-apiserver|base64)\", \"version\": \"${var.kubernetes_version}\"}"
     EOF
     delete = "rm -f bin/kube-apiserver"
   }

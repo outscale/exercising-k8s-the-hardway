@@ -2,6 +2,16 @@
 - name: Setup control-planes
   hosts: control_planes
   tasks:
+    - name: Hostname
+      become: yes
+      ansible.builtin.hostname:
+        name: "{{ inventory_hostname }}"
     - name: Disable swap
-      command: swapoff -a
       become: true
+      ansible.builtin.command: swapoff -a
+    - name: /etc/hosts
+      become: yes
+      ansible.builtin.copy:
+        src: ../hosts
+        dest: /etc/
+        mode: '0444'

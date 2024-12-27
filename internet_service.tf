@@ -1,4 +1,8 @@
 resource "outscale_internet_service" "internet_service" {
+  tags {
+    key   = "name"
+    value = "${var.cluster_name}"
+  }
 }
 
 resource "outscale_internet_service_link" "internet_service_link" {

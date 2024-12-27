@@ -30,8 +30,7 @@ resource "shell_script" "kubectl-local" {
   lifecycle_commands {
     create = <<-EOF
         mkdir -p bin
-        wget "https://dl.k8s.io/release/${var.kubernetes_version}/bin/${var.terraform_os}/${var.terraform_arch}/kubectl" -O bin/kubectl-local
-        chmod +x bin/kubectl-local
+        wget "https://dl.k8s.io/v${var.kubernetes_version}/bin/${var.terraform_os}/${var.terraform_arch}/kubectl" -O bin/kubectl-local && chmod +x bin/kubectl-local
     EOF
     read   = <<-EOF
         echo "{\"md5\": \"$(md5sum bin/kubectl-local)\"}"
@@ -44,8 +43,7 @@ resource "shell_script" "kubectl-remote" {
   lifecycle_commands {
     create = <<-EOF
         mkdir -p bin
-        wget "https://dl.k8s.io/release/${var.kubernetes_version}/bin/linux/amd64/kubectl" -O bin/kubectl
-        chmod +x bin/kubectl
+        wget "https://dl.k8s.io/v${var.kubernetes_version}/bin/linux/amd64/kubectl" -O bin/kubectl
     EOF
     read   = <<-EOF
         echo "{\"md5\": \"$(md5sum bin/kubectl)\"}"
@@ -109,37 +107,6 @@ resource "shell_script" "admin-kubeconfig-lb" {
   depends_on        = [shell_script.cfssl, shell_script.cfssljson, shell_script.ca, data.local_file.ca-config, shell_script.admin]
 }
 
-resource "shell_script" "admin-kubeconfig-public" {
-  count = var.control_plane_count
-  lifecycle_commands {
-    create = <<-EOF
-        ../bin/kubectl-local config set-cluster ${var.cluster_name} \
-            --certificate-authority=../ca/ca.pem \
-            --embed-certs=true \
-            --server=https://${outscale_public_ip.control-planes[count.index].public_ip}:6443 \
-            --kubeconfig=control-plane-${count.index}_admin.kubeconfig
-        ../bin/kubectl-local config set-credentials system:admin \
-            --client-certificate=admin.pem \
-            --client-key=admin-key.pem \
-            --embed-certs=true \
-            --kubeconfig=control-plane-${count.index}_admin.kubeconfig
-        ../bin/kubectl-local config set-context default --cluster=${var.cluster_name} \
-            --user=system:admin \
-            --kubeconfig=control-plane-${count.index}_admin.kubeconfig
-        ../bin/kubectl-local config use-context default \
-            --kubeconfig=control-plane-${count.index}_admin.kubeconfig
-    EOF
-    read   = <<-EOF
-        echo "{\"b64\": \"$(cat control-plane-${count.index}_admin.kubeconfig|base64)\"}"
-    EOF
-    delete = <<-EOF
-        rm -f control-plane-${count.index}_admin.kubeconfig
-    EOF
-  }
-  working_directory = "${path.root}/admin"
-  depends_on        = [shell_script.cfssl, shell_script.cfssljson, shell_script.ca, data.local_file.ca-config, shell_script.admin]
-}
-
 resource "shell_script" "admin-kubeconfig-localhost" {
   lifecycle_commands {
     create = <<-EOF
@@ -185,5 +152,5 @@ resource "shell_script" "admin-playbook" {
     EOF
     delete = ""
   }
-  depends_on = [shell_script.control-planes-playbook, data.local_file.admin-csr-json, shell_script.admin-kubeconfig-lb, shell_script.admin-kubeconfig-public, shell_script.admin-kubeconfig-localhost]
+  depends_on = [shell_script.control-planes-playbook, data.local_file.admin-csr-json, shell_script.admin-kubeconfig-lb, shell_script.admin-kubeconfig-localhost]
 }

@@ -2,17 +2,27 @@
 - name: Setup workers
   hosts: workers
   tasks:
+    - name: Hostname
+      become: yes
+      ansible.builtin.hostname:
+        name: "{{ inventory_hostname }}"
     - name: Install software
       become: yes
-      apt:
+      ansible.builtin.apt:
         update_cache: yes
         name:
           - socat # for kubectl port-forward
           - conntrack
           - ipset
     - name: Disable swap
-      command: swapoff -a
       become: true
+      ansible.builtin.command: swapoff -a
     - name: Add modprobe support for DNS
-      command: modprobe br_netfilter
+      ansible.builtin.command: modprobe br_netfilter
       become: true
+    - name: /etc/hosts
+      become: yes
+      ansible.builtin.copy:
+        src: ../hosts
+        dest: /etc/
+        mode: '0444'

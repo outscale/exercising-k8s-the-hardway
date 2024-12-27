@@ -62,11 +62,10 @@ resource "shell_script" "kube-controller-manager-bin" {
   lifecycle_commands {
     create = <<-EOF
         mkdir -p bin
-        wget -q --https-only --timestamping "https://storage.googleapis.com/kubernetes-release/release/${var.kubernetes_version}/bin/linux/amd64/kube-controller-manager" -O bin/kube-controller-manager
-        chmod +x bin/kube-controller-manager
+        wget -q --https-only --timestamping "https://dl.k8s.io/v${var.kubernetes_version}/bin/linux/amd64/kube-controller-manager" -O bin/kube-controller-manager
     EOF
     read   = <<-EOF
-        echo "{\"md5\": \"$(md5sum bin/kube-controller-manager|base64)\"}"
+        echo "{\"md5\": \"$(md5sum bin/kube-controller-manager|base64)\", \"version\": \"${var.kubernetes_version}\"}"
     EOF
     delete = "rm -f bin/kube-controller-manager"
   }
